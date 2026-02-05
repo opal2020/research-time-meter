@@ -16,30 +16,64 @@ export default function App() {
   // 파일에서 기록 불러오기
   const handleOpenFile = async () => {
     try {
-      // @ts-ignore
-      const [handle] = await window.showOpenFilePicker({
-        types: [
-          {
-            description: "JSON Files",
-            accept: { "application/json": [".json"] },
-          },
-        ],
-        multiple: false,
-      });
-      fileHandleRef.current = handle;
-      const file = await handle.getFile();
-      setCurrentFileName(file.name);
-      const text = await file.text();
-      const data = JSON.parse(text);
-      if (Array.isArray(data)) {
-        // timestamp를 Date 객체로 변환
-        const parsedLogs = data.map((log: any) => ({
-          ...log,
-          timestamp: new Date(log.timestamp),
-        }));
-        setLogs(parsedLogs);
+      // File System Access API 지원 여부 확인
+      if ("showOpenFilePicker" in window) {
+        // @ts-ignore
+        const [handle] = await window.showOpenFilePicker({
+          types: [
+            {
+              description: "JSON Files",
+              accept: { "application/json": [".json"] },
+            },
+          ],
+          multiple: false,
+        });
+        fileHandleRef.current = handle;
+        const file = await handle.getFile();
+        setCurrentFileName(file.name);
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (Array.isArray(data)) {
+          // timestamp를 Date 객체로 변환
+          const parsedLogs = data.map((log: any) => ({
+            ...log,
+            timestamp: new Date(log.timestamp),
+          }));
+          setLogs(parsedLogs);
+        } else {
+          alert("파일 형식이 올바르지 않습니다.");
+        }
       } else {
-        alert("파일 형식이 올바르지 않습니다.");
+        // 모바일/구형 브라우저: input file 방식
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".json";
+        input.onchange = (event) => {
+          const file = (event.target as HTMLInputElement).files?.[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              try {
+                const text = e.target?.result as string;
+                const data = JSON.parse(text);
+                if (Array.isArray(data)) {
+                  const parsedLogs = data.map((log: any) => ({
+                    ...log,
+                    timestamp: new Date(log.timestamp),
+                  }));
+                  setLogs(parsedLogs);
+                  setCurrentFileName(file.name);
+                } else {
+                  alert("파일 형식이 올바르지 않습니다.");
+                }
+              } catch {
+                alert("파일을 읽는 중 오류가 발생했습니다.");
+              }
+            };
+            reader.readAsText(file);
+          }
+        };
+        input.click();
       }
     } catch (e) {
       if (e instanceof Error && e.name !== "AbortError") {
@@ -51,28 +85,44 @@ export default function App() {
   // 기록을 파일에 저장
   const handleSaveFile = async () => {
     try {
-      let handle = fileHandleRef.current;
-      if (!handle) {
-        // @ts-ignore
-        handle = await window.showSaveFilePicker({
-          suggestedName: "research_time_logs.json",
-          types: [
-            {
-              description: "JSON Files",
-              accept: { "application/json": [".json"] },
-            },
-          ],
-        });
-        fileHandleRef.current = handle;
+      // File System Access API 지원 여부 확인
+      if ("showSaveFilePicker" in window) {
+        let handle = fileHandleRef.current;
+        if (!handle) {
+          // @ts-ignore
+          handle = await window.showSaveFilePicker({
+            suggestedName: "research_time_logs.json",
+            types: [
+              {
+                description: "JSON Files",
+                accept: { "application/json": [".json"] },
+              },
+            ],
+          });
+          fileHandleRef.current = handle;
+        }
+        if (!currentFileName && handle) {
+          const file = await handle.getFile();
+          setCurrentFileName(file.name);
+        }
+        const writable = await handle!.createWritable();
+        await writable.write(JSON.stringify(logs, null, 2));
+        await writable.close();
+        alert("저장되었습니다!");
+      } else {
+        // 모바일/구형 브라우저: 다운로드 링크 방식
+        const dataStr = JSON.stringify(logs, null, 2);
+        const dataBlob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "research_time_logs.json";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        alert("다운로드가 시작되었습니다!");
       }
-      if (!currentFileName && handle) {
-        const file = await handle.getFile();
-        setCurrentFileName(file.name);
-      }
-      const writable = await handle!.createWritable();
-      await writable.write(JSON.stringify(logs, null, 2));
-      await writable.close();
-      alert("저장되었습니다!");
     } catch (e) {
       if (e instanceof Error && e.name !== "AbortError") {
         alert("저장 중 오류가 발생했습니다.");
