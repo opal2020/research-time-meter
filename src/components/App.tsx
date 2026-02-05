@@ -111,17 +111,28 @@ export default function App() {
         alert("저장되었습니다!");
       } else {
         // 모바일/구형 브라우저: 다운로드 링크 방식
+        const now = new Date();
+        const timestamp = now
+          .toISOString()
+          .slice(0, 16)
+          .replace("T", "_")
+          .replace(/:/g, "");
+        const fileName = `research_logs_${timestamp}.json`;
+
         const dataStr = JSON.stringify(logs, null, 2);
         const dataBlob = new Blob([dataStr], { type: "application/json" });
         const url = URL.createObjectURL(dataBlob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = "research_time_logs.json";
+        link.download = fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        alert("다운로드가 시작되었습니다!");
+
+        alert(
+          `파일이 다운로드되었습니다!\n파일명: ${fileName}\n\n일반적으로 "다운로드" 폴더에 저장됩니다.\n브라우저의 다운로드 목록에서 확인하세요.`,
+        );
       }
     } catch (e) {
       if (e instanceof Error && e.name !== "AbortError") {
