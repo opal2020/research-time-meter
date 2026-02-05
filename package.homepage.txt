@@ -1,0 +1,6 @@
+// GitHub Pages 배포를 위한 homepage 설정
+// package.json에 아래 항목이 포함되어야 함
+{
+  "homepage": "https://YOUR_GITHUB_ID.github.io/research-time-meter/"
+}
+// 이미 package.json이 있다면 homepage 항목만 추가/수정하세요.
