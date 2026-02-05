@@ -1,5 +1,9 @@
 name: Deploy to GitHub Pages
 
+permissions:
+  id-token: write
+  contents: read
+
 on:
   push:
     branches:
@@ -22,4 +26,4 @@ jobs:
       - name: Deploy
         uses: actions/deploy-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
