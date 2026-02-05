@@ -308,37 +308,52 @@ export default function App() {
         />
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-        <div style={{ 
-          fontSize: "0.75rem", 
-          color: "#718096",
-          minHeight: "1.5rem",
+      <div
+        style={{
           display: "flex",
-          alignItems: "center"
-        }}>
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "1rem",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "0.75rem",
+            color: "#718096",
+            minHeight: "1.5rem",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
           {currentFileName || ""}
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button onClick={handleOpenFile} style={{ 
-            padding: "0.4rem 0.8rem", 
-            fontSize: "0.8rem",
-            borderRadius: "4px", 
-            border: "1px solid #cbd5e0", 
-            background: "#fff", 
-            color: "#4a5568",
-            cursor: "pointer" 
-          }}>
+          <button
+            onClick={handleOpenFile}
+            style={{
+              padding: "0.4rem 0.8rem",
+              fontSize: "0.8rem",
+              borderRadius: "4px",
+              border: "1px solid #cbd5e0",
+              background: "#fff",
+              color: "#4a5568",
+              cursor: "pointer",
+            }}
+          >
             불러오기
           </button>
-          <button onClick={handleSaveFile} style={{ 
-            padding: "0.4rem 0.8rem", 
-            fontSize: "0.8rem",
-            borderRadius: "4px", 
-            border: "1px solid #cbd5e0", 
-            background: "#fff", 
-            color: "#4a5568",
-            cursor: "pointer" 
-          }}>
+          <button
+            onClick={handleSaveFile}
+            style={{
+              padding: "0.4rem 0.8rem",
+              fontSize: "0.8rem",
+              borderRadius: "4px",
+              border: "1px solid #cbd5e0",
+              background: "#fff",
+              color: "#4a5568",
+              cursor: "pointer",
+            }}
+          >
             저장
           </button>
         </div>

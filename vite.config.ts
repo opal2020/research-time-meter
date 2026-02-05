@@ -3,7 +3,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  base: '/research-time-meter/', // 레포 이름에 맞게 수정
+  base: "/research-time-meter/", // 레포 이름에 맞게 수정
   plugins: [react()],
   server: {
     open: true,
