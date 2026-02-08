@@ -4,8 +4,11 @@ import LogItem, { Log } from "./LogItem";
 export default function App() {
   // 파일 핸들러 ref
   const fileHandleRef = useRef<FileSystemFileHandle | null>(null);
-  const [time, setTime] = useState(0);
+  // 정확한 경과 시간 측정용
+  const [time, setTime] = useState(0); // 화면에 표시할 경과 시간(초)
   const [isRunning, setIsRunning] = useState(false);
+  const [startTimestamp, setStartTimestamp] = useState<number | null>(null); // 타이머 시작 시각 (ms)
+  const [accumulated, setAccumulated] = useState(0); // 일시정지 등으로 누적된 시간(초)
   const [logs, setLogs] = useState<Log[]>([]);
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
@@ -111,13 +114,20 @@ export default function App() {
         alert("저장되었습니다!");
       } else {
         // 모바일/구형 브라우저: 다운로드 링크 방식
-        const now = new Date();
-        const timestamp = now
-          .toISOString()
-          .slice(0, 16)
-          .replace("T", "_")
-          .replace(/:/g, "");
-        const fileName = `research_logs_${timestamp}.json`;
+        let fileName;
+        if (currentFileName) {
+          // 불러온 파일이 있으면 같은 이름으로 저장
+          fileName = currentFileName;
+        } else {
+          // 새로운 파일이면 타임스탬프 포함
+          const now = new Date();
+          const timestamp = now
+            .toISOString()
+            .slice(0, 16)
+            .replace("T", "_")
+            .replace(/:/g, "");
+          fileName = `research_logs_${timestamp}.json`;
+        }
 
         const dataStr = JSON.stringify(logs, null, 2);
         const dataBlob = new Blob([dataStr], { type: "application/json" });
@@ -130,9 +140,15 @@ export default function App() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        alert(
-          `파일이 다운로드되었습니다!\n파일명: ${fileName}\n\n일반적으로 "다운로드" 폴더에 저장됩니다.\n브라우저의 다운로드 목록에서 확인하세요.`,
-        );
+        if (currentFileName) {
+          alert(
+            `"${fileName}" 파일이 업데이트되었습니다!\n\n일반적으로 "다운로드" 폴더에 저장됩니다.\n브라우저의 다운로드 목록에서 확인하세요.`,
+          );
+        } else {
+          alert(
+            `파일이 다운로드되었습니다!\n파일명: ${fileName}\n\n일반적으로 "다운로드" 폴더에 저장됩니다.\n브라우저의 다운로드 목록에서 확인하세요.`,
+          );
+        }
       }
     } catch (e) {
       if (e instanceof Error && e.name !== "AbortError") {
@@ -141,13 +157,21 @@ export default function App() {
     }
   };
 
+  // 정확한 경과 시간 측정: 시작 시각 + 누적 시간
   useEffect(() => {
     let interval: number | undefined;
-    if (isRunning) {
-      interval = window.setInterval(() => setTime((time) => time + 1), 1000);
+    if (isRunning && startTimestamp !== null) {
+      interval = window.setInterval(() => {
+        const now = Date.now();
+        setTime(Math.floor((now - startTimestamp) / 1000) + accumulated);
+      }, 1000);
+      // 즉시 갱신
+      setTime(Math.floor((Date.now() - startTimestamp) / 1000) + accumulated);
     }
-    return () => clearInterval(interval);
-  }, [isRunning]);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRunning, startTimestamp, accumulated]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -158,14 +182,37 @@ export default function App() {
       .padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  const handleStart = () => setIsRunning(true);
-  const handlePause = () => setIsRunning(false);
+  // 타이머 시작
+  const handleStart = () => {
+    if (!isRunning) {
+      setIsRunning(true);
+      setStartTimestamp(Date.now());
+    }
+  };
+
+  // 일시정지
+  const handlePause = () => {
+    if (isRunning && startTimestamp !== null) {
+      const now = Date.now();
+      const elapsed = Math.floor((now - startTimestamp) / 1000);
+      setAccumulated((prev) => prev + elapsed);
+      setIsRunning(false);
+      setStartTimestamp(null);
+    }
+  };
+
+  // 정지 및 로그 저장
   const handleStop = () => {
-    if (time > 0) {
+    let total = accumulated;
+    if (isRunning && startTimestamp !== null) {
+      const now = Date.now();
+      total += Math.floor((now - startTimestamp) / 1000);
+    }
+    if (total > 0) {
       const newLog: Log = {
         id: Date.now().toString(),
         timestamp: new Date(),
-        duration: time,
+        duration: total,
         description: description || "Research session",
         notes: notes,
       };
@@ -175,6 +222,8 @@ export default function App() {
     }
     setTime(0);
     setIsRunning(false);
+    setStartTimestamp(null);
+    setAccumulated(0);
   };
 
   useEffect(() => {
@@ -188,6 +237,11 @@ export default function App() {
       }));
       setLogs(logsWithDates);
     }
+    // 타이머 상태 초기화
+    setTime(0);
+    setIsRunning(false);
+    setStartTimestamp(null);
+    setAccumulated(0);
   }, []);
 
   useEffect(() => {
